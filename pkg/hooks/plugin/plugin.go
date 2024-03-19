@@ -38,6 +38,7 @@ func (h *PluginHook) Setup() error {
 			Level:      hclog.Debug,
 			Output:     os.Stdout,
 			TimeFormat: "2006/01/02 03:04:05.000000",
+			JSONFormat: true,
 		}),
 	})
 	//defer client.Kill()
