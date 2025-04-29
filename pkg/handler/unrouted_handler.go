@@ -382,6 +382,10 @@ func (handler *UnroutedHandler) PostFile(w http.ResponseWriter, r *http.Request)
 		if changes.Storage != nil {
 			info.Storage = changes.Storage
 		}
+
+		if changes.StorageFileMetadata != nil {
+			info.StorageFileMetadata = changes.StorageFileMetadata
+		}
 	}
 
 	upload, err := handler.composer.Core.NewUpload(c, info)
@@ -543,6 +547,10 @@ func (handler *UnroutedHandler) PostFileV2(w http.ResponseWriter, r *http.Reques
 
 		if changes.Storage != nil {
 			info.Storage = changes.Storage
+		}
+
+		if changes.StorageFileMetadata != nil {
+			info.StorageFileMetadata = changes.StorageFileMetadata
 		}
 	}
 

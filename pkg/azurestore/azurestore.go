@@ -15,6 +15,8 @@ import (
 	"github.com/tus/tusd/v2/pkg/handler"
 )
 
+type AzMakeMetadataFunc func(handler.FileInfo) (handler.MetaData, error)
+
 type AzureStore struct {
 	Service      AzService
 	ObjectPrefix string
@@ -24,6 +26,19 @@ type AzureStore struct {
 	// on disk during the upload. An empty string ("", the default value) will
 	// cause AzureStore to use the operating system's default temporary directory.
 	TemporaryDirectory string
+
+	// ???
+	// - Define callback for the metadata
+	// - Or just a boolean like AddMetadataToBlockBlob
+	// - Or maybe just add StorageBlobMetadata map to handler.FileInfo?
+	// ???
+	//
+	// Limitations for metadata attached to a blob are:
+	// - The total size of all metadata name/value pairs must not exceed 8 KiB
+	// - Metadata name/value pairs must adhere to all restrictions governing HTTP headers
+	// - Metadata names must adher to C# identifiers
+	// - Metadata names are case-insensitive
+	MakeBlockBlobMetadata AzMakeMetadataFunc
 }
 
 type AzUpload struct {
@@ -33,6 +48,8 @@ type AzUpload struct {
 	InfoHandler *handler.FileInfo
 
 	tempDir string
+
+	makeBlockBlobMetadata AzMakeMetadataFunc
 }
 
 func New(service AzService) *AzureStore {
@@ -77,11 +94,12 @@ func (store AzureStore) NewUpload(ctx context.Context, info handler.FileInfo) (h
 	}
 
 	azUpload := &AzUpload{
-		ID:          info.ID,
-		InfoHandler: &info,
-		InfoBlob:    infoBlob,
-		BlockBlob:   blockBlob,
-		tempDir:     store.TemporaryDirectory,
+		ID:                    info.ID,
+		InfoHandler:           &info,
+		InfoBlob:              infoBlob,
+		BlockBlob:             blockBlob,
+		tempDir:               store.TemporaryDirectory,
+		makeBlockBlobMetadata: store.MakeBlockBlobMetadata,
 	}
 
 	err = azUpload.writeInfo(ctx)
@@ -133,11 +151,12 @@ func (store AzureStore) GetUpload(ctx context.Context, id string) (handler.Uploa
 	info.Offset = offset
 
 	return &AzUpload{
-		ID:          id,
-		InfoHandler: &info,
-		InfoBlob:    infoBlob,
-		BlockBlob:   blockBlob,
-		tempDir:     store.TemporaryDirectory,
+		ID:                    id,
+		InfoHandler:           &info,
+		InfoBlob:              infoBlob,
+		BlockBlob:             blockBlob,
+		tempDir:               store.TemporaryDirectory,
+		makeBlockBlobMetadata: store.MakeBlockBlobMetadata,
 	}, nil
 }
 
@@ -216,7 +235,27 @@ func (upload *AzUpload) GetReader(ctx context.Context) (io.ReadCloser, error) {
 
 // Finish the file upload and commit the block list
 func (upload *AzUpload) FinishUpload(ctx context.Context) error {
-	return upload.BlockBlob.Commit(ctx)
+	info, err := upload.GetInfo(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get Content-Type from filetype metadata field. For V1 uploads this field can only
+	// be set in upload client, or a hook.
+	// For V2 uploads is read from Content-Type header of POST request
+	var contenttype *string
+	if filetype, found := info.MetaData["filetype"]; found {
+		contenttype = &filetype
+	}
+
+	// TODO: Using info.Metadata for initial testing only.
+	//       Actually would use info.StorageFileMetadata OR MakeBlockBlobMetadata here
+	blobmetadata := make(map[string]*string, len(info.MetaData))
+	for k, v := range info.MetaData {
+		blobmetadata[k] = &v
+	}
+
+	return upload.BlockBlob.Commit(ctx, contenttype, blobmetadata)
 }
 
 func (upload *AzUpload) Terminate(ctx context.Context) error {

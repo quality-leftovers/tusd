@@ -160,6 +160,7 @@ func unmarshal(res *pb.HookResponse) (hookRes hooks.HookResponse) {
 		hookRes.ChangeFileInfo.ID = changes.Id
 		hookRes.ChangeFileInfo.MetaData = changes.MetaData
 		hookRes.ChangeFileInfo.Storage = changes.Storage
+		hookRes.ChangeFileInfo.StorageFileMetadata = changes.StorageFileMetadata
 	}
 
 	return hookRes

@@ -56,6 +56,9 @@ message FileInfo {
 	// for example a file path. The available values vary depending on what data
 	// store is used. This map may also be nil.
 	map <string, string> storage = 9;
+	// Metadata storage should attatch to completed upload
+	// The supported values vary depending on what storee is used. This map may also be nil.
+	map <string, string> storageFileMetadata = 10;
 }
 
 // FileInfoChanges collects changes the should be made to a FileInfo object. This
@@ -84,6 +87,13 @@ message FileInfoChanges {
 	// Please be aware that this behavior is currently not supported by any data store in
 	// the github.com/tus/tusd package.
 	map <string, string> storage = 3;
+
+	// If StorageFileMetadata is not nil, it is passed to the data store to allow for minor adjustments
+	// to the upload storage (e.g. destination file name). The details are specific for each
+	// data store and should be looked up in their respective documentation.
+	// Please be aware that this behavior is currently not supported by any data store in
+	// the github.com/tus/tusd package.
+	map <string, string> storageFileMetadata = 4;
 }
 
 

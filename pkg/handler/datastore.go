@@ -33,7 +33,9 @@ type FileInfo struct {
 	// for example a file path. The available values vary depending on what data
 	// store is used. This map may also be nil.
 	Storage map[string]string
-
+	// Metadata storage should attatch to completed upload
+	// The supported values vary depending on what storee is used. This map may also be nil.
+	StorageFileMetadata map[string]string
 	// stopUpload is a callback for communicating that an upload should by stopped
 	// and interrupt the writes to DataStore#WriteChunk.
 	stopUpload func(HTTPResponse)
@@ -80,6 +82,12 @@ type FileInfoChanges struct {
 	// Please be aware that this behavior is currently not supported by any data store in
 	// the github.com/tus/tusd package.
 	Storage map[string]string
+
+	// If StorageFileMetadata is not nil, it is passed to the data store to request
+	// attachment of custom metadata. The behavior depends on what store is used.
+	// If you do not want to attach any meta data to the content file, set this field to an empty map.
+	// If you want to keep default attached metadata (currently none), set this field to nil.
+	StorageFileMetadata map[string]string
 }
 
 type Upload interface {
