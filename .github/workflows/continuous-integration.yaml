@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - azurestore-servecontent-nopr
   pull_request:
 
 jobs:
